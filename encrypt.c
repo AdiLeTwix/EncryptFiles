@@ -5,6 +5,32 @@
 
 #define MAX 100
 
+
+int read_msg(char *path, char **message){
+    FILE *fp;
+    fp = fopen(path,"r");
+    if(fp == NULL){
+        printf("Error: cannot open message file\n");
+        return 1;
+    }
+    char buffer[MAX];
+    size_t content_size = 0; //todo: optimize this
+    
+    while(fgets(buffer, MAX, fp) != NULL){
+        size_t len = strlen(buffer);
+        *message = realloc(*message, content_size + len + 1);
+        if(*message == NULL){
+            printf("Error: cannot allocate memory\n");
+            return 1;
+        }
+        strcpy(*message + content_size, buffer);
+        content_size += len;
+    }
+
+    fclose(fp);
+    return 0;
+}
+
 int encode(char *message, char *path_key){
     FILE *fp;
     fp = fopen(path_key,"r");
@@ -23,16 +49,24 @@ int encode(char *message, char *path_key){
 }
 
 
-int encrypt_msg(char *message, char *path_key, char *path){
+int encrypt_msg(char *message, char *in_path, char *path_key, char *out_path){
+    
+    if(message == NULL){
+        if(read_msg(in_path, &message) != 0){
+            printf("Error: cannot read message\n");
+            return 1;
+        }
+    }
+    
     if(encode(message, path_key) != 0){
         printf("Error: cannot encode message\n");
         return 1;
     }
 
 
-    if(path != NULL){
+    if(out_path != NULL){
     FILE *fp;
-    fp = fopen(path,"w");
+    fp = fopen(out_path,"w");
 
     if(fp == NULL){
         printf("Error: cannot open file\n");
@@ -49,29 +83,14 @@ int encrypt_msg(char *message, char *path_key, char *path){
 }
 
 int decrypt(char *path_message, char *path_key){
-    FILE *fp;
-    fp = fopen(path_message,"r");
-    if(fp == NULL){
-        printf("Error: cannot open message file\n");
+    char* message = NULL;
+
+    if(read_msg(path_message, &message) != 0){
+        printf("Error: cannot read message\n");
         return 1;
     }
-    char buffer[MAX];
-    char *message = NULL;
-    size_t content_size = 0;
-    
-    while(fgets(buffer, MAX, fp) != NULL){
-        size_t len = strlen(buffer);
-        message = realloc(message, content_size + len + 1);
-        if(message == NULL){
-            printf("Error: cannot allocate memory\n");
-            return 1;
-        }
-        strcpy(message + content_size, buffer);
-        content_size += len;
-    }
 
-    fclose(fp);
-
+    FILE *fp;
     fp = fopen(path_key,"r");
     if(fp == NULL){
         printf("Error: cannot open key file\n");
@@ -81,6 +100,7 @@ int decrypt(char *path_message, char *path_key){
     fscanf(fp, "%s", key);
     fclose(fp);
 
+    size_t content_size = strlen(message);
     for(size_t i = 0; i < content_size; i++){
         if(message[i] >= 'a' && message[i] <= 'z'){
             for(int j = 0; j < 26; j++){

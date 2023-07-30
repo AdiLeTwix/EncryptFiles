@@ -5,7 +5,7 @@
 #include "encrypt.h"
 #include "key.h"
 
-#define usage fprintf(stderr, "Usage: %s [-k key_file] [-i input_file] [-o output_file] [-e] [-d] [-g]\n", argv[0]); exit(EXIT_FAILURE);
+#define usage fprintf(stderr, "Usage: %s [-k key_file] [-m message] [-i input_file] [-o output_file] [-e] [-d] [-g]\n", argv[0]); exit(EXIT_FAILURE);
 
 enum mode{
     ENCRYPT,
@@ -15,9 +15,10 @@ enum mode{
 };
 
 void printhelp(){
-    printf("Usage: ./enc [-k key_file] [-i input_file] [-o output_file] [-e] [-d] [-g]\n");
+    printf("Usage: ./enc [-k key_file] [-m message] [-i input_file] [-o output_file] [-e] [-d] [-g]\n");
     printf("Options:\n");
     printf("  -k key_file: specify the key file\n");
+    printf("  -m message: specify the message\n");
     printf("  -i input_file: specify the input file\n");
     printf("  -o output_file: specify the output file\n");
     printf("  -e: encrypt the input file with the key file\n");
@@ -34,12 +35,16 @@ int main(int argc, char **argv) {
     char *key_file = NULL;
     char *input_file = NULL;
     char *output_file = NULL;
+    char *message = NULL;
     enum mode current_mode = NONE;
 
-    while ((opt = getopt(argc, argv, "k:i:o:edgh")) != -1) {
+    while ((opt = getopt(argc, argv, "k:m:i:o:edgh")) != -1) {
         switch (opt) {
             case 'k':
                 key_file = optarg;
+                break;
+            case 'm':
+                message = optarg;
                 break;
             case 'i':
                 input_file = optarg;
@@ -65,11 +70,11 @@ int main(int argc, char **argv) {
     }
 
     if(current_mode == ENCRYPT){
-        if(key_file == NULL || input_file == NULL){
+        if(key_file == NULL || (input_file == NULL && message == NULL) || (input_file != NULL && message != NULL)){
             usage;
         }
-        printf("Encrypt: %s with %s in %s...\n",input_file,key_file, output_file);
-        return encrypt_msg(input_file, key_file, output_file);
+        printf("Encrypt message with %s...\n",key_file);
+        return encrypt_msg(message, input_file, key_file, output_file);
     }
 
     if(current_mode == GENERATE_KEY){

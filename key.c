@@ -24,5 +24,6 @@ int generate_key(char *name){
     }
     fprintf(fp, "%s", key);
     fclose(fp);
+    printf("Done\n");
     return 0;
 }
